@@ -1,80 +1,51 @@
-// Import Firebase
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, updateDoc, doc } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js";
+// Import the functions you need from Firebase SDK
+import { initializeApp } from "firebase/app";
+import { getFirestore, collection, addDoc } from "firebase/firestore";
 
-// Firebase Config (Replace with your Firebase project settings)
+// Your Firebase configuration (copy-paste from Firebase Console)
 const firebaseConfig = {
-    apiKey: "your-api-key",
-    authDomain: "your-auth-domain",
-    projectId: "your-project-id",
-    storageBucket: "your-storage-bucket",
-    messagingSenderId: "your-sender-id",
-    appId: "your-app-id"
+  apiKey: "AIzaSyAhe6DV4xKXmQ0gnqB_Y11DE5XNO3LhoHg",
+  authDomain: "torontobetting.firebaseapp.com",
+  projectId: "torontobetting",
+  storageBucket: "torontobetting.firebasestorage.app",
+  messagingSenderId: "853729122637",
+  appId: "1:853729122637:web:78e49fdcf435b92a48bf04",
+  measurementId: "G-2LFP3M1XRH"
 };
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
+
+// Initialize Firestore
 const db = getFirestore(app);
 
-// Handle Bet Creation
-document.getElementById("bet-form").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    
-    const betTitle = document.getElementById("bet-title").value;
-    const betDescription = document.getElementById("bet-description").value;
-    const betOdds = document.getElementById("bet-odds").value;
-    const betDeadline = document.getElementById("bet-deadline").value;
-    const creator = "User"; // Change this to track real users in the future
+// Reference to the form and the Create Bet button
+const betForm = document.getElementById('bet-form');
 
-    if (!betTitle || !betDescription || !betOdds || !betDeadline) {
-        alert("Please fill in all fields!");
-        return;
-    }
+// Handle form submission
+betForm.addEventListener('submit', async (e) => {
+    e.preventDefault(); // Prevent the default form submission behavior
 
+    // Get the form data
+    const betTitle = document.getElementById('bet-title').value;
+    const betDescription = document.getElementById('bet-description').value;
+    const betOdds = document.getElementById('bet-odds').value;
+    const betDeadline = document.getElementById('bet-deadline').value;
+
+    // Add the bet to Firestore
     try {
-        await addDoc(collection(db, "bets"), {
+        const docRef = await addDoc(collection(db, "bets"), {
             title: betTitle,
             description: betDescription,
             odds: betOdds,
             deadline: betDeadline,
-            creator: creator,
-            status: "active"
+            createdAt: new Date()
         });
-        alert("Bet Created!");
-        loadBets(); // Refresh the bet list
+        console.log("Bet created with ID: ", docRef.id);
+        alert('Bet Created Successfully!');
     } catch (e) {
-        console.error("Error adding document: ", e);
+        console.error("Error adding bet: ", e);
+        alert('Error creating bet!');
     }
 });
 
-// Fetch and display active bets
-async function loadBets() {
-    const querySnapshot = await getDocs(collection(db, "bets"));
-    const betsList = document.getElementById("bets-list");
-    betsList.innerHTML = ""; // Clear previous bets
-
-    querySnapshot.forEach((doc) => {
-        const bet = doc.data();
-        const li = document.createElement("li");
-        li.innerHTML = `
-            <strong>${bet.title}</strong> - ${bet.description} 
-            | Odds: ${bet.odds} | Deadline: ${bet.deadline}
-            <button onclick="confirmBet('${doc.id}')">Confirm</button>
-        `;
-        betsList.appendChild(li);
-    });
-}
-
-// Confirm bet results (Only the creator should do this)
-async function confirmBet(betId) {
-    try {
-        const betRef = doc(db, "bets", betId);
-        await updateDoc(betRef, { status: "confirmed" });
-        alert("Bet Confirmed!");
-        loadBets(); // Refresh the bet list
-    } catch (e) {
-        console.error("Error updating bet: ", e);
-    }
-}
-
-loadBets(); // Load bets on page load
